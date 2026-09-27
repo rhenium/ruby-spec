@@ -308,13 +308,13 @@ describe "IO#read" do
 
     buf = +'non-empty string'
     @io.pos = 10
-    @io.read(nil, buf).should == ""
+    @io.read(nil, buf).should.equal?(buf)
 
     buf.should == ''
 
     buf = +'non-empty string'
     @io.pos = 10
-    @io.read(0, buf).should == ""
+    @io.read(0, buf).should.equal?(buf)
 
     buf.should == ''
   end
@@ -450,6 +450,13 @@ describe "IO#read" do
   it "returns nil at end-of-file with a length" do
     @io.read
     @io.read(1).should == nil
+  end
+
+  it "reads additional contents appended after reaching end of file" do
+    @io.read
+    @io.read(1).should == nil
+    File.open(@fname, "a") { |f| f << "appended" }
+    @io.read(100).should == "appended"
   end
 
   it "with length argument returns nil when the current pos is bigger than the content size" do

@@ -55,6 +55,13 @@ describe "IO#gets" do
         $..should == @count += 1
       end
     end
+
+    it "does not update $. or lineno if limit is reached before the end of stream" do
+      $. = 0
+      @io.gets(1).should == IOSpecs.lines[0][0, 1]
+      @io.lineno.should == 0
+      $..should == 0
+    end
   end
 
   describe "with nil separator" do
@@ -155,6 +162,22 @@ describe "IO#gets" do
       @io.gets(chomp: true).should == IOSpecs.lines_without_newline_characters[0]
     end
 
+    it "does not remove a trailing \\r at the end of stream" do
+      IO.pipe do |read, write|
+        write.write("line\r")
+        write.close
+        read.gets(chomp: true).should == "line\r"
+      end
+    end
+
+    it "does not remove a trailing \\r if the limit is reached before the end of line" do
+      IO.pipe do |read, write|
+        write.write("line\r\n")
+        write.close
+        read.gets(5, chomp: true).should == "line\r"
+      end
+    end
+
     it "raises exception when options passed as Hash" do
       -> { @io.gets({ chomp: true }) }.should.raise(TypeError)
 
@@ -245,6 +268,13 @@ describe "IO#gets" do
   end
 
   it "returns empty string when 0 passed as a limit" do
+    @io.gets(0).should == ""
+    @io.gets(nil, 0).should == ""
+    @io.gets("", 0).should == ""
+  end
+
+  it "returns empty string when passed 0 as a limit even at the end of stream" do
+    @io.read
     @io.gets(0).should == ""
     @io.gets(nil, 0).should == ""
     @io.gets("", 0).should == ""
